@@ -3,19 +3,21 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from langchain_core.tools import tool
+import railtracks as rt
 
 from src.state.store import get_store
 
 
-@tool
+@rt.function_node
 def medication_check(action: str = "status", medication_name: str = "", scheduled_time: str = "") -> str:
     """Check medication schedule or log that a medication was taken.
 
-    Actions:
-      - "status": show what's due, overdue, and already taken today
-      - "taken": mark a specific medication as taken (requires medication_name and scheduled_time)
-      - "list": show all registered medications and their schedules
+    Actions: "status" (what's due/overdue), "taken" (mark as taken), "list" (all meds).
+
+    Args:
+        action (str): One of "status", "taken", or "list".
+        medication_name (str): Required when action is "taken". Name of the medication.
+        scheduled_time (str): Required when action is "taken". The scheduled time slot (e.g. "08:00").
     """
     store = get_store()
 

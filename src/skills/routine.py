@@ -3,19 +3,22 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from langchain_core.tools import tool
+import railtracks as rt
 
 from src.state.store import get_store
 
 
-@tool
+@rt.function_node
 def daily_routine(action: str = "today", activity: str = "", location: str = "", hours_back: float = 24.0) -> str:
     """Query or update the user's daily routine log.
 
-    Actions:
-      - "today": get a summary of today's activities so far
-      - "log": record a new activity (requires activity, optional location)
-      - "history": get activities from the last N hours (set hours_back)
+    Actions: "today" (today's summary), "log" (record activity), "history" (past N hours).
+
+    Args:
+        action (str): One of "today", "log", or "history".
+        activity (str): Required when action is "log". Description of the activity.
+        location (str): Optional location for "log" action.
+        hours_back (float): Hours of history to retrieve for "history" action.
     """
     store = get_store()
 

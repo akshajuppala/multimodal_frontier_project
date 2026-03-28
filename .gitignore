@@ -5,6 +5,7 @@ __pycache__/
 data/agent_log.jsonl
 data/state.db
 server/data/
+.railtracks/
 .DS_Store
 *.egg-info/
 dist/

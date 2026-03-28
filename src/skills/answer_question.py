@@ -1,8 +1,7 @@
-from langchain_core.tools import tool
+import railtracks as rt
 
 from src.agent.context import SharedContext
 
-# This will be set at app startup to the shared context instance
 _shared_context: SharedContext | None = None
 
 
@@ -11,9 +10,13 @@ def set_shared_context(ctx: SharedContext) -> None:
     _shared_context = ctx
 
 
-@tool
+@rt.function_node
 def answer_question(question: str) -> str:
-    """Look up information from recent observations and last-seen items to answer a question about the patient's environment, activities, or item locations."""
+    """Look up information from recent observations and last-seen items to answer a question about the patient's environment, activities, or item locations.
+
+    Args:
+        question (str): The user's question about their environment, items, or activities.
+    """
     if _shared_context is None:
         return "No observation context available."
     summary = _shared_context.get_summary()

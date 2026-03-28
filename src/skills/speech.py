@@ -8,7 +8,7 @@ import base64
 import logging
 import os
 
-from langchain_core.tools import tool
+import railtracks as rt
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +46,12 @@ def _tts_elevenlabs(text: str) -> bytes:
     return response.content
 
 
-@tool
+@rt.function_node
 def speech_tool(text: str) -> str:
-    """Convert text to speech audio. Use this to speak to the user.
+    """Convert text to speech audio. Use this to speak to the user. Returns confirmation with base64-encoded audio.
 
-    Returns confirmation with base64-encoded audio that the server pushes
-    to the iOS app over WebSocket.
+    Args:
+        text (str): The message to speak to the user. Keep it short and clear.
     """
     audio_b64 = ""
 

@@ -5,7 +5,7 @@ import logging
 import os
 
 import httpx
-from langchain_core.tools import tool
+import railtracks as rt
 
 logger = logging.getLogger(__name__)
 
@@ -13,12 +13,12 @@ WEATHER_API_KEY = os.getenv("WEATHER_API_KEY", "")
 DEFAULT_LOCATION = os.getenv("DEFAULT_LOCATION", "New York,US")
 
 
-@tool
+@rt.function_node
 def weather_check(location: str = "") -> str:
     """Get current weather conditions and practical suggestions for going outside.
 
-    Optionally provide a location (e.g. "San Francisco,US"). Defaults to the
-    configured home location.
+    Args:
+        location (str): City name (e.g. "San Francisco,US"). Defaults to configured home location.
     """
     loc = location or DEFAULT_LOCATION
 

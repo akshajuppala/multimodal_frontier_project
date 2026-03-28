@@ -1,6 +1,6 @@
 import logging
 
-from langchain_core.tools import tool
+import railtracks as rt
 from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse
 
@@ -34,7 +34,11 @@ def make_emergency_call(reason: str) -> str:
     return f"Emergency call placed (SID: {call.sid}). Reason: {reason}"
 
 
-@tool
+@rt.function_node
 def call_emergency(reason: str) -> str:
-    """Call the emergency contact via phone. Only use this for genuine emergencies such as falls, fires, or medical distress. Provide a clear reason for the call."""
+    """Call the emergency contact via phone. Only use this for genuine emergencies such as falls, fires, or medical distress. Provide a clear reason for the call.
+
+    Args:
+        reason (str): A clear description of the emergency situation.
+    """
     return make_emergency_call(reason)
