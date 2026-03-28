@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+data/agent_log.jsonl
+.venv/
+*.egg-info/
+dist/
+build/
