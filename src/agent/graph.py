@@ -11,6 +11,10 @@ from src.skills.answer_question import answer_question, set_shared_context
 from src.skills.calendar_read import calendar_read
 from src.skills.calendar_write import calendar_write
 from src.skills.call_emergency import call_emergency
+from src.skills.medication import medication_check
+from src.skills.routine import daily_routine
+from src.skills.weather import weather_check
+from src.skills.speech import speech_tool
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +31,16 @@ class MainAgent:
             temperature=0,
         )
 
-        self._tools = [calendar_read, calendar_write, answer_question, call_emergency]
+        self._tools = [
+            calendar_read,
+            calendar_write,
+            answer_question,
+            call_emergency,
+            medication_check,
+            daily_routine,
+            weather_check,
+            speech_tool,
+        ]
 
         self._agent = create_react_agent(
             model=model,
