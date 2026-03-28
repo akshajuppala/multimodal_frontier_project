@@ -22,5 +22,6 @@ class AgentLogger:
             "tool_calls": tool_calls,
             "response": response,
         }
+        print(entry)
         with open(self._log_path, "a") as f:
             f.write(json.dumps(entry) + "\n")

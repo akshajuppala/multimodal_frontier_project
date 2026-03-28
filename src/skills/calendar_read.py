@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from langchain_core.tools import tool
+from railtracks import function_node
 
 CALENDAR_PATH = "data/calendar.json"
 
@@ -16,7 +16,7 @@ def read_calendar_file(path: str = CALENDAR_PATH) -> list[dict]:
     return data.get("events", [])
 
 
-@tool
+@function_node
 def calendar_read(date_filter: str = "") -> str:
     """Read upcoming events from the calendar. Optionally filter by date prefix (e.g. '2026-03-29')."""
     events = read_calendar_file()

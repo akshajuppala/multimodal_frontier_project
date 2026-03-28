@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "http://10.64.19.19:8000";
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
@@ -10,19 +10,19 @@ export function useWebSocket() {
   const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const connect = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
     const wsUrl = BACKEND_URL.replace(/^http/, "ws") + "/video/stream";
     setStatus("connecting");
 
     const ws = new WebSocket(wsUrl);
-    ws.binaryType = "blob";
-
     ws.onopen = () => {
       setStatus("connected");
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       setStatus("disconnected");
       wsRef.current = null;
+      console.error(`WebSocket Closed. Code: ${event.code}, Reason: ${event.reason}`);
       // Reconnect after 3 seconds
       reconnectTimeout.current = setTimeout(connect, 3000);
     };
@@ -38,19 +38,20 @@ export function useWebSocket() {
     connect();
     return () => {
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
-      wsRef.current?.close();
+      if (wsRef.current) {
+        wsRef.current.onopen = null;
+        wsRef.current.onclose = null;
+        wsRef.current.onerror = null;
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     };
   }, [connect]);
 
   const sendFrame = useCallback((base64Jpeg: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       // Convert base64 to binary and send
-      const binaryString = atob(base64Jpeg);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      wsRef.current.send(bytes.buffer);
+      wsRef.current.send(base64Jpeg);
     }
   }, []);
 

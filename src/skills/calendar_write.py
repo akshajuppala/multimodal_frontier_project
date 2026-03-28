@@ -2,7 +2,7 @@ import json
 import uuid
 from pathlib import Path
 
-from langchain_core.tools import tool
+from railtracks import function_node
 
 CALENDAR_PATH = "data/calendar.json"
 
@@ -26,7 +26,7 @@ def write_calendar_file(path: str = CALENDAR_PATH, event: dict = None) -> None:
         json.dump(data, f, indent=2)
 
 
-@tool
+@function_node
 def calendar_write(title: str, datetime_str: str, description: str = "", reminder_minutes_before: int = 15) -> str:
     """Add a new event to the calendar. Provide a title, datetime (ISO format), optional description, and reminder time in minutes."""
     event = {

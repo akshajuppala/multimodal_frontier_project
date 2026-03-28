@@ -1,4 +1,4 @@
-const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "http://10.64.19.19:8000";
 
 export interface SpeechResponse {
   response: string;

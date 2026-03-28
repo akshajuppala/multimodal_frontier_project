@@ -1,7 +1,9 @@
 import asyncio
 import logging
+import base64
 from contextlib import asynccontextmanager
 
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
@@ -50,12 +52,13 @@ async def process_observer_window(frames: list[tuple[str, bytes]]) -> None:
 
 
 async def dispatch_loop() -> None:
-    """Background loop that checks the buffer and dispatches observer jobs."""
+    """Background loop that checks the buffer and dispatches observer jobs.
+    Runs sequentially so a slow/retrying API call naturally throttles the next."""
     while True:
         if frame_buffer.should_dispatch():
             frames = frame_buffer.snapshot()
             if frames:
-                asyncio.create_task(process_observer_window(frames))
+                await process_observer_window(frames)
         await asyncio.sleep(0.5)
 
 
@@ -67,7 +70,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Alzheimer's Caregiver Assistant", lifespan=lifespan)
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, replace with ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.websocket("/video/stream")
 async def video_stream(websocket: WebSocket):
@@ -75,16 +84,21 @@ async def video_stream(websocket: WebSocket):
     logger.info("Video stream connected")
     try:
         while True:
-            data = await websocket.receive_bytes()
-            frame_buffer.add_frame(data)
+            data = await websocket.receive_text()
+            img_data = base64.b64decode(data)
+            frame_buffer.add_frame(img_data)
     except WebSocketDisconnect:
         logger.info("Video stream disconnected")
 
 
 @app.post("/speech", response_model=SpeechResponse)
 async def speech(request: SpeechRequest):
-    response_text = await main_agent.handle_speech(request.text)
-    return SpeechResponse(response=response_text)
+    try:
+        response_text = await main_agent.handle_speech(request.text)
+        return SpeechResponse(response=response_text)
+    except Exception as e:
+        logger.error(f"Speech handler failed: {e}")
+        return SpeechResponse(response="I'm sorry, I'm having trouble right now. Please try again in a moment.")
 
 
 @app.get("/health")

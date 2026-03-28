@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     twilio_from_number: str = ""
     emergency_contact_number: str = ""
     frame_sample_rate: int = 2
-    observer_window_seconds: int = 5
+    observer_window_seconds: int = 15
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

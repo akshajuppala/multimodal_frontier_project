@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,19 +6,75 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import {
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+} from "react-native-vision-camera";
+import { File as ExpoFile } from "expo-file-system";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useFrameCapture } from "../hooks/useFrameCapture";
 import { useVoiceRecorder } from "../hooks/useVoiceRecorder";
 import { useSpeechAgent } from "../hooks/useSpeechAgent";
 
-export default function CameraScreen() {
-  const cameraRef = useRef<CameraView>(null);
-  const [permission, requestPermission] = useCameraPermissions();
-  const [cameraReady, setCameraReady] = useState(false);
+const FRAME_SAMPLE_RATE = Number(process.env.EXPO_PUBLIC_FRAME_SAMPLE_RATE) || 2;
+const INTERVAL_MS = 1000 / FRAME_SAMPLE_RATE;
 
+export default function CameraScreen() {
+  const cameraRef = useRef<Camera>(null);
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice("back");
   const { status: wsStatus, sendFrame } = useWebSocket();
-  useFrameCapture(cameraRef, sendFrame, cameraReady && wsStatus === "connected");
+
+  const enabled = wsStatus === "connected";
+  const onFrame = useFrameCapture(sendFrame, enabled);
+
+  // Snapshot-based capture loop running off the JS thread's timer.
+  // takePhoto() on vision-camera does NOT freeze the preview.
+  const activeRef = useRef(false);
+  useEffect(() => {
+    if (!enabled || !device) {
+      activeRef.current = false;
+      return;
+    }
+    activeRef.current = true;
+
+    async function loop() {
+      while (activeRef.current) {
+        if (cameraRef.current) {
+          try {
+            const photo = await cameraRef.current.takePhoto({
+              flash: "off",
+              enableShutterSound: false,
+            });
+            if (activeRef.current && photo.path) {
+              const uri = photo.path.startsWith("file://")
+                ? photo.path
+                : `file://${photo.path}`;
+              const file = new ExpoFile(uri);
+              const buffer = await file.arrayBuffer();
+              const bytes = new Uint8Array(buffer);
+              const chunks: string[] = [];
+              for (let i = 0; i < bytes.length; i += 8192) {
+                chunks.push(String.fromCharCode(...bytes.subarray(i, i + 8192)));
+              }
+              onFrame(btoa(chunks.join("")));
+            }
+          } catch (e) {
+            console.error("Frame capture error:", e);
+          }
+        }
+        if (activeRef.current) {
+          await new Promise((r) => setTimeout(r, INTERVAL_MS));
+        }
+      }
+    }
+
+    loop();
+    return () => {
+      activeRef.current = false;
+    };
+  }, [enabled, device, onFrame]);
 
   const { state: recorderState, startRecording, stopAndTranscribe } =
     useVoiceRecorder();
@@ -51,12 +107,7 @@ export default function CameraScreen() {
   };
 
   // Permissions not loaded yet
-  if (!permission) {
-    return <View style={styles.container} />;
-  }
-
-  // Permissions not granted
-  if (!permission.granted) {
+  if (!hasPermission) {
     return (
       <View style={styles.permissionContainer}>
         <Text style={styles.permissionText}>
@@ -69,13 +120,22 @@ export default function CameraScreen() {
     );
   }
 
+  if (!device) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.statusText}>No camera device found</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <CameraView
+      <Camera
         ref={cameraRef}
         style={styles.camera}
-        facing="back"
-        onCameraReady={() => setCameraReady(true)}
+        device={device}
+        isActive={true}
+        photo={true}
       />
 
       {/* Connection status indicator */}
